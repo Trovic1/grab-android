@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Grab</string>
+    <string name="share_label">Download with Grab</string>
+    <string name="tile_label">Grab copied link</string>
+</resources>
