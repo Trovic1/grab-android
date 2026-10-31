@@ -51,6 +51,31 @@
             </intent-filter>
         </activity>
 
+        <!-- Second entry in the share menu: "Grab MP3" saves only the sound. -->
+        <activity-alias
+            android:name=".GrabAudio"
+            android:targetActivity=".GrabActivity"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/share_audio_label">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity-alias>
+
+        <service
+            android:name=".GrabAudioTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_music"
+            android:label="@string/tile_audio_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
         <service
             android:name=".GrabTileService"
             android:exported="true"

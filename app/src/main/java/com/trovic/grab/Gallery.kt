@@ -36,7 +36,9 @@ object Gallery {
             mime.startsWith("audio") -> Environment.DIRECTORY_MUSIC
             else -> Environment.DIRECTORY_PICTURES
         }
-        val name = "Grab_" + System.currentTimeMillis() + "_" + file.name.takeLast(80)
+        // Songs keep their title as the file name; videos/pictures get a unique Grab_ name.
+        val name = if (kind == Environment.DIRECTORY_MUSIC) file.name.replace('_', ' ')
+        else "Grab_" + System.currentTimeMillis() + "_" + file.name.takeLast(80)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val collection = when (kind) {

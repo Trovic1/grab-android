@@ -49,15 +49,19 @@ object Notifs {
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
             PendingIntent.getActivity(ctx, id, view, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         } else openApp(ctx)
-        val what = if (saved.size == 1) {
-            if (first.mime.startsWith("video")) "Video" else "Picture"
-        } else "${saved.size} files"
+        val audio = first.mime.startsWith("audio")
+        val title = when {
+            audio -> "MP3 saved to Music"
+            saved.size > 1 -> "${saved.size} files saved to Gallery"
+            first.mime.startsWith("video") -> "Video saved to Gallery"
+            else -> "Picture saved to Gallery"
+        }
         post(
             ctx, id,
             NotificationCompat.Builder(ctx, CH_DONE)
-                .setSmallIcon(R.drawable.ic_grab)
-                .setContentTitle("$what saved to Gallery")
-                .setContentText("Tap to open")
+                .setSmallIcon(if (audio) R.drawable.ic_music else R.drawable.ic_grab)
+                .setContentTitle(title)
+                .setContentText(if (audio) first.name.substringBeforeLast('.') else "Tap to open")
                 .setAutoCancel(true)
                 .setContentIntent(tap)
                 .build(),

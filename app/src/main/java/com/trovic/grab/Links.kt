@@ -26,18 +26,18 @@ object Links {
     }
 
     /** Queue a download in the background. Same link twice at once is ignored. */
-    fun enqueue(ctx: Context, url: String) {
+    fun enqueue(ctx: Context, url: String, mode: String = Mode.VIDEO) {
         val request = OneTimeWorkRequestBuilder<DownloadWorker>()
-            .setInputData(workDataOf(DownloadWorker.KEY_URL to url))
+            .setInputData(workDataOf(DownloadWorker.KEY_URL to url, DownloadWorker.KEY_MODE to mode))
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .addTag(DownloadWorker.TAG)
             .build()
         History.put(
             ctx,
-            History.Entry(request.id.toString(), url, "queued", "Waiting…", System.currentTimeMillis(), null, null),
+            History.Entry(request.id.toString(), url, "queued", "Waiting…", System.currentTimeMillis(), null, null, mode),
         )
-        WorkManager.getInstance(ctx).enqueueUniqueWork("dl:$url", ExistingWorkPolicy.KEEP, request)
+        WorkManager.getInstance(ctx).enqueueUniqueWork("dl:$mode:$url", ExistingWorkPolicy.KEEP, request)
         Prefs.markHandled(ctx, url)
     }
 

@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">Grab</string>
     <string name="share_label">Download with Grab</string>
+    <string name="share_audio_label">Grab MP3</string>
     <string name="tile_label">Grab copied link</string>
+    <string name="tile_audio_label">Grab copied audio</string>
 </resources>

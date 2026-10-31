@@ -13,8 +13,17 @@ object Prefs {
     fun autoGrab(c: Context) = p(c).getBoolean("auto", true)
     fun setAutoGrab(c: Context, on: Boolean) = p(c).edit().putBoolean("auto", on).apply()
 
+    /** What the in-app Download button and auto-download save: [Mode.VIDEO] or [Mode.AUDIO]. */
+    fun mode(c: Context): String = p(c).getString("mode", Mode.VIDEO) ?: Mode.VIDEO
+    fun setMode(c: Context, m: String) = p(c).edit().putString("mode", m).apply()
+
     fun lastEngineUpdate(c: Context) = p(c).getLong("engine_update", 0L)
     fun setLastEngineUpdate(c: Context, t: Long) = p(c).edit().putLong("engine_update", t).apply()
+}
+
+object Mode {
+    const val VIDEO = "video" // video or picture, as posted
+    const val AUDIO = "audio" // MP3 of the video's sound
 }
 
 /** Small list of recent downloads, stored as JSON in preferences. */
@@ -27,6 +36,7 @@ object History {
         val time: Long,
         val uri: String?,
         val mime: String?,
+        val mode: String = Mode.VIDEO,
     )
 
     private const val MAX = 40
@@ -41,6 +51,7 @@ object History {
                 o.getString("id"), o.getString("url"), o.getString("state"),
                 o.optString("message"), o.getLong("time"),
                 o.optString("uri").ifEmpty { null }, o.optString("mime").ifEmpty { null },
+                o.optString("mode").ifEmpty { Mode.VIDEO },
             )
         }
     }
@@ -54,7 +65,7 @@ object History {
             arr.put(JSONObject().apply {
                 put("id", it.id); put("url", it.url); put("state", it.state)
                 put("message", it.message); put("time", it.time)
-                put("uri", it.uri ?: ""); put("mime", it.mime ?: "")
+                put("uri", it.uri ?: ""); put("mime", it.mime ?: ""); put("mode", it.mode)
             })
         }
         p(c).edit().putString("items", arr.toString()).apply()

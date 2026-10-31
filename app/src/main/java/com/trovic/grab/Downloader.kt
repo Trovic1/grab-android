@@ -43,7 +43,7 @@ object Downloader {
         }
     }
 
-    suspend fun download(ctx: Context, url: String, onProgress: (Int?) -> Unit): List<Saved> =
+    suspend fun download(ctx: Context, url: String, audio: Boolean, onProgress: (Int?) -> Unit): List<Saved> =
         withContext(Dispatchers.IO) {
             lock.withLock { initIfNeeded(ctx) }
             if (System.currentTimeMillis() - Prefs.lastEngineUpdate(ctx) > AUTO_UPDATE_EVERY_MS) {
@@ -53,20 +53,23 @@ object Downloader {
             val tmp = File(ctx.cacheDir, "dl_" + System.nanoTime()).apply { mkdirs() }
             try {
                 var firstError: Throwable? = null
-                var files = runCatching { ytdlp(ctx, url, tmp, onProgress) }
+                var files = runCatching { ytdlp(ctx, url, tmp, audio, onProgress) }
                     .onFailure { firstError = it }.getOrDefault(emptyList())
 
-                if (files.isEmpty()) {
+                if (files.isEmpty() && !audio) {
+                    // Picture-only posts: grab the preview image instead (no sound to extract, so not for MP3).
                     onProgress(null)
                     files = runCatching { Fallback.fetch(url, tmp) }.getOrDefault(emptyList())
                 }
                 if (files.isEmpty() && !updatedThisRun) {
                     // Maybe the site changed: update yt-dlp once and try again.
                     runCatching { update(ctx) }
-                    files = runCatching { ytdlp(ctx, url, tmp, onProgress) }
+                    files = runCatching { ytdlp(ctx, url, tmp, audio, onProgress) }
                         .onFailure { firstError = it }.getOrDefault(emptyList())
                 }
-                if (files.isEmpty()) throw firstError ?: IllegalStateException("No video or picture found at this link")
+                if (files.isEmpty()) throw firstError ?: IllegalStateException(
+                    if (audio) "No video with sound found at this link" else "No video or picture found at this link"
+                )
 
                 files.sortedBy { it.name }.map { Gallery.save(ctx, it) }
             } finally {
@@ -74,17 +77,27 @@ object Downloader {
             }
         }
 
-    private fun ytdlp(ctx: Context, url: String, dir: File, onProgress: (Int?) -> Unit): List<File> {
+    private fun ytdlp(ctx: Context, url: String, dir: File, audio: Boolean, onProgress: (Int?) -> Unit): List<File> {
         dir.listFiles()?.forEach { it.deleteRecursively() }
         val request = YoutubeDLRequest(url).apply {
-            addOption("-o", dir.absolutePath + "/%(extractor_key)s_%(id)s.%(ext)s")
             addOption("--restrict-filenames")
             addOption("--no-mtime")
             addOption("--no-playlist")
-            // Prefer H.264 + AAC in MP4 so every gallery/player can open it.
-            addOption("-f", "bv*[vcodec^=avc]+ba[ext=m4a]/b[ext=mp4]/bv*+ba/b")
-            addOption("--merge-output-format", "mp4")
             addOption("--retries", "3")
+            if (audio) {
+                // Best audio track, converted to a 320 kbps-class MP3 named after the video title.
+                addOption("-o", dir.absolutePath + "/%(title).80B.%(ext)s")
+                addOption("-f", "ba/b")
+                addOption("-x")
+                addOption("--audio-format", "mp3")
+                addOption("--audio-quality", "0")
+                addOption("--embed-metadata")
+            } else {
+                addOption("-o", dir.absolutePath + "/%(extractor_key)s_%(id)s.%(ext)s")
+                // Prefer H.264 + AAC in MP4 so every gallery/player can open it.
+                addOption("-f", "bv*[vcodec^=avc]+ba[ext=m4a]/b[ext=mp4]/bv*+ba/b")
+                addOption("--merge-output-format", "mp4")
+            }
             val cookies = cookiesFile(ctx)
             if (cookies.exists()) addOption("--cookies", cookies.absolutePath)
         }
@@ -98,6 +111,7 @@ object Downloader {
         }
         return dir.listFiles()
             ?.filter { it.isFile && it.length() > 0 && it.extension !in setOf("part", "ytdl", "json", "txt") }
+            ?.filter { !audio || it.extension.equals("mp3", ignoreCase = true) }
             .orEmpty()
     }
 

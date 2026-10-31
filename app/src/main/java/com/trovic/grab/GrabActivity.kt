@@ -15,9 +15,16 @@ class GrabActivity : AppCompatActivity() {
 
     companion object {
         const val ACTION_CLIPBOARD = "com.trovic.grab.FROM_CLIPBOARD"
+        const val EXTRA_MODE = "com.trovic.grab.MODE"
     }
 
     private var handled = false
+
+    /** "Grab MP3" in the share menu is an alias of this screen; the audio tile passes EXTRA_MODE. */
+    private val mode: String
+        get() = if (intent?.getStringExtra(EXTRA_MODE) == Mode.AUDIO ||
+            intent?.component?.className?.endsWith(".GrabAudio") == true
+        ) Mode.AUDIO else Mode.VIDEO
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,8 +51,10 @@ class GrabActivity : AppCompatActivity() {
         if (url == null) {
             Toast.makeText(this, "No link found", Toast.LENGTH_SHORT).show()
         } else {
-            Links.enqueue(this, url)
-            Toast.makeText(this, "Grabbing ${Links.short(url)}", Toast.LENGTH_SHORT).show()
+            val m = mode
+            Links.enqueue(this, url, m)
+            val what = if (m == Mode.AUDIO) "Grabbing MP3 from" else "Grabbing"
+            Toast.makeText(this, "$what ${Links.short(url)}", Toast.LENGTH_SHORT).show()
         }
         finish()
     }

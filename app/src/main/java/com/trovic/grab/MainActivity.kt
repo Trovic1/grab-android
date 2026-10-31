@@ -21,6 +21,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.progressindicator.LinearProgressIndicator
@@ -76,6 +77,12 @@ class MainActivity : AppCompatActivity() {
             clipCard.visibility = View.GONE
         }
 
+        val modeGroup = findViewById<MaterialButtonToggleGroup>(R.id.modeGroup)
+        modeGroup.check(if (Prefs.mode(this) == Mode.AUDIO) R.id.modeAudio else R.id.modeVideo)
+        modeGroup.addOnButtonCheckedListener { _, id, checked ->
+            if (checked) Prefs.setMode(this, if (id == R.id.modeAudio) Mode.AUDIO else Mode.VIDEO)
+        }
+
         val auto = findViewById<MaterialSwitch>(R.id.autoSwitch)
         auto.isChecked = Prefs.autoGrab(this)
         auto.setOnCheckedChangeListener { _, on -> Prefs.setAutoGrab(this, on) }
@@ -129,7 +136,8 @@ class MainActivity : AppCompatActivity() {
         if (url == Prefs.lastHandled(this)) return
         if (Prefs.autoGrab(this)) {
             start(url)
-            Snackbar.make(findViewById(R.id.root), "Downloading copied link", Snackbar.LENGTH_SHORT).show()
+            val what = if (Prefs.mode(this) == Mode.AUDIO) "Saving MP3 from copied link" else "Downloading copied link"
+            Snackbar.make(findViewById(R.id.root), what, Snackbar.LENGTH_SHORT).show()
         } else {
             pendingClip = url
             clipText.text = Links.short(url)
@@ -150,8 +158,8 @@ class MainActivity : AppCompatActivity() {
         urlInput.setText("")
     }
 
-    private fun start(url: String) {
-        Links.enqueue(this, url)
+    private fun start(url: String, mode: String = Prefs.mode(this)) {
+        Links.enqueue(this, url, mode)
         clipCard.visibility = View.GONE
         render()
     }
@@ -165,7 +173,8 @@ class MainActivity : AppCompatActivity() {
             val row = inflater.inflate(R.layout.item_history, historyList, false)
             val info = workInfos[e.id]
             val bar = row.findViewById<LinearProgressIndicator>(R.id.progress)
-            row.findViewById<TextView>(R.id.title).text = Links.short(e.url)
+            row.findViewById<TextView>(R.id.title).text =
+                (if (e.mode == Mode.AUDIO) "♪ MP3 · " else "") + Links.short(e.url)
 
             // If the app was killed mid-download, WorkManager knows the real state.
             val state = when {
@@ -205,7 +214,7 @@ class MainActivity : AppCompatActivity() {
             } catch (_: ActivityNotFoundException) { }
         }
         if (state == "failed") {
-            start(e.url)
+            start(e.url, e.mode)
             toast("Retrying")
         }
     }

@@ -13,11 +13,13 @@ class DownloadWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(c
 
     companion object {
         const val KEY_URL = "url"
+        const val KEY_MODE = "mode"
         const val KEY_PROGRESS = "progress"
         const val TAG = "grab"
     }
 
     private val url get() = inputData.getString(KEY_URL).orEmpty()
+    private val audio get() = inputData.getString(KEY_MODE) == Mode.AUDIO
     private val notifId get() = id.hashCode()
 
     private fun foreground(percent: Int?): ForegroundInfo {
@@ -39,12 +41,16 @@ class DownloadWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(c
         History.update(ctx, historyId) { it.copy(state = "running", message = "Downloading…") }
 
         return try {
-            val saved = Downloader.download(ctx, url) { pct ->
+            val saved = Downloader.download(ctx, url, audio) { pct ->
                 setProgressAsync(workDataOf(KEY_PROGRESS to (pct ?: -1)))
                 Notifs.post(ctx, notifId, Notifs.progress(ctx, Links.short(url), pct))
             }
             val first = saved.first()
-            val msg = if (saved.size == 1) "Saved to Gallery" else "Saved ${saved.size} files to Gallery"
+            val msg = when {
+                audio -> "MP3 saved to Music"
+                saved.size == 1 -> "Saved to Gallery"
+                else -> "Saved ${saved.size} files to Gallery"
+            }
             History.update(ctx, historyId) {
                 it.copy(state = "done", message = msg, uri = first.uri.toString(), mime = first.mime)
             }

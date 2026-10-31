@@ -23,7 +23,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            android:text="Copy or share a link from any app. Grab saves the video or picture to your Gallery."
+            android:text="Copy or share a link from any app. Grab saves the video or picture to your Gallery, or just the sound as an MP3."
             android:textAppearance="?attr/textAppearanceBodyMedium" />
 
         <!-- Shown when a copied link is found and auto-download is off -->
@@ -79,6 +79,35 @@
                 android:inputType="textUri" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/modeGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            app:selectionRequired="true"
+            app:singleSelection="true">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/modeVideo"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Video / picture"
+                app:icon="@drawable/ic_grab"
+                app:iconTint="?attr/colorPrimary" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/modeAudio"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="MP3 audio"
+                app:icon="@drawable/ic_music"
+                app:iconTint="?attr/colorPrimary" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -121,7 +150,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:lineSpacingMultiplier="1.2"
-            android:text="• In any app, tap Share → Grab.\n• Or copy a link, pull down Quick Settings and tap the “Grab copied link” tile (add it once via the pencil icon).\n• Or select a link in any text and choose Grab from the menu." />
+            android:text="• In any app, tap Share → Grab.\n• Want just the sound? Share → “Grab MP3” saves it to Music.\n• Or copy a link, pull down Quick Settings and tap the “Grab copied link” or “Grab copied audio” tile (add them once via the pencil icon).\n• Or select a link in any text and choose Grab from the menu." />
 
         <TextView
             android:layout_width="wrap_content"
